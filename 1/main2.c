@@ -86,15 +86,6 @@ int solve(char *file)
     qsort(vec_left->items, vec_left->size, sizeof(int), compare);
     qsort(vec_right->items, vec_right->size, sizeof(int), compare);
 
-    /*for (unsigned long i = 0; i < vec_left->size; i++)*/
-    /*{*/
-    /*    printf("[%lu]=%d ", i, vec_left->items[i]);*/
-    /*}*/
-    /*for (unsigned long i = 0; i < vec_right->size; i++)*/
-    /*{*/
-    /*    printf("[%lu]=%d ", i, vec_right->items[i]);*/
-    /*}*/
-
     for (unsigned long i = 0; i < vec_left->size; i++)
     {
         int frequency = 0;
