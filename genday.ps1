@@ -6,3 +6,4 @@ param(
 mkdir $Day
 cp ./justfile ./$Day
 cp ./template.c ./$Day/main.c
+cp ./template.c ./$Day/main2.c
