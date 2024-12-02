@@ -1,4 +1,5 @@
 #define _CRT_SECURE_NO_WARNINGS
+#include <ctype.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -11,14 +12,18 @@ typedef struct
 {
     unsigned long size;
     unsigned long capacity;
-    char **items;
+    int *items;
 } Vec;
 
 Vec *n_vec();
 void delete_vec(Vec *);
 void append(Vec *, char *);
+void sort_vec(Vec *);
+void compare(void *a, void *b);
 
-double solve(char *file);
+void consume_line(FILE *);
+
+int solve(char *file);
 
 int main(int argc, char *argv[])
 {
@@ -28,15 +33,15 @@ int main(int argc, char *argv[])
         exit(EXIT_FAILURE);
     }
 
-    double result = solve(argv[1]);
+    int result = solve(argv[1]);
 
-    printf("Result: %f", result);
+    printf("Result: %d", result);
 }
 
-double solve(char *file)
+int solve(char *file)
 {
     FILE *fp = fopen(file, "r");
-    Vec* vec = NULL;
+    Vec *vec = NULL;
     double result = 0;
 
     if (fp == NULL)
@@ -48,11 +53,19 @@ double solve(char *file)
     vec = n_vec();
 
     char io;
-    while ((io = fgetc(fp)) && io != EOF) {
+    while ((io = fgetc(fp)) && io != EOF)
+    {
     }
 
     delete_vec(vec);
     return result;
+}
+
+void consume_line(FILE *fp)
+{
+    char io;
+    while ((io = fgetc(fp)) != '\n' && io != EOF)
+        ;
 }
 
 Vec *n_vec()
@@ -64,35 +77,36 @@ Vec *n_vec()
     return v;
 }
 
+void compare(const void *a, const void *b) { return *(int *)a - *(int *)b; }
+void sort_vec(Vec *vec) { qsort(vec->items, vec->size, sizeof(int), compare); }
+
 void delete_vec(Vec *vec)
 {
     if (vec == NULL)
         return;
 
-    for (unsigned long i = 0; i < vec->size; i++)
+    if (vec->items != NULL)
     {
-        if (vec->items[i] != NULL)
-            free(vec->items[i]);
+        free(vec->items);
     }
 
     free(vec);
 }
 
-void append(Vec *vec, char *val)
+void append(Vec *vec, int val)
 {
     if (vec->size <= vec->capacity)
     {
         if (vec->capacity == 0)
         {
             vec->capacity = INIT_CAP;
-            vec->items = malloc(sizeof(char *) * vec->capacity);
+            vec->items = malloc(sizeof(int) * vec->capacity);
         }
         else
         {
             vec->capacity += CAP_INCREMENT;
-            vec->items = realloc(vec->items, sizeof(char *) * vec->capacity);
+            vec->items = realloc(vec->items, sizeof(int) * vec->capacity);
         }
     }
     vec->items[vec->size++] = val;
 }
-
