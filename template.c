@@ -5,6 +5,7 @@
 #include <string.h>
 
 #define INIT_CAP 25
+#define CAP_INCREMENT
 
 typedef struct
 {
@@ -88,7 +89,7 @@ void append(Vec *vec, char *val)
         }
         else
         {
-            vec->capacity *= 2;
+            vec->capacity += CAP_INCREMENT;
             vec->items = realloc(vec->items, sizeof(char *) * vec->capacity);
         }
     }
