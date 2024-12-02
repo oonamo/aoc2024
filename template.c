@@ -5,7 +5,7 @@
 #include <string.h>
 
 #define INIT_CAP 25
-#define CAP_INCREMENT
+#define CAP_INCREMENT 5
 
 typedef struct
 {
