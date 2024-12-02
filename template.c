@@ -17,9 +17,9 @@ typedef struct
 
 Vec *n_vec();
 void delete_vec(Vec *);
-void append(Vec *, char *);
+void append(Vec *, int);
 void sort_vec(Vec *);
-void compare(void *a, void *b);
+int compare(const void *a, const void *b);
 
 void consume_line(FILE *);
 
