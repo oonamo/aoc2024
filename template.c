@@ -77,7 +77,7 @@ Vec *n_vec()
     return v;
 }
 
-void compare(const void *a, const void *b) { return *(int *)a - *(int *)b; }
+int compare(const void *a, const void *b) { return *(int *)a - *(int *)b; }
 void sort_vec(Vec *vec) { qsort(vec->items, vec->size, sizeof(int), compare); }
 
 void delete_vec(Vec *vec)
