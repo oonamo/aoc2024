@@ -9,6 +9,7 @@ BUILD2 := "main2.exe"
 
 INPUT_FILE := "input.txt"
 TEST_FILE := "mock.txt"
+DEBUG_FILE := "unsafe.txt"
 
 build:
   {{CC}} -o {{BUILD}} {{ENTRY}} {{CC_FLAGS}}
@@ -28,3 +29,6 @@ run2: build2
 
 test2: build2
   {{BUILD2}} {{TEST_FILE}}
+
+debug2: build2
+  {{BUILD2}} {{DEBUG_FILE}}
