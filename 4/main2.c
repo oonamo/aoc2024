@@ -114,22 +114,6 @@ int solve(char *file)
         }
     }
 
-    /*printf("      ");*/
-    /*for (unsigned long i = 0; i < mat->columns; i++)*/
-    /*{*/
-    /*    printf("%lu ", i);*/
-    /*}*/
-    /*printf("\n");*/
-    /*for (unsigned long i = 0; i < mat->rows; i++)*/
-    /*{*/
-    /*    printf("(%lu) [ ", i);*/
-    /*    for (unsigned long j = 0; j < mat->columns; j++)*/
-    /*    {*/
-    /*        printf("%c ", mat->items[i][j]);*/
-    /*    }*/
-    /*    printf("]\n");*/
-    /*}*/
-
     delete_vec(vec);
     delete_matrix(mat);
     return result;
