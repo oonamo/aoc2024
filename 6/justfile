@@ -7,6 +7,9 @@ BUILD := "main.exe"
 ENTRY2 := "main2.c"
 BUILD2 := "main2.exe"
 
+HACK_ENTRY := "hack2.c"
+BUILD_HACK := "hack2.exe"
+
 INPUT_FILE := "input.txt"
 TEST_FILE := "mock.txt"
 
@@ -28,3 +31,12 @@ run2: build2
 
 test2: build2
   {{BUILD2}} {{TEST_FILE}}
+
+build_hack:
+  {{CC}} -o {{BUILD_HACK}} {{HACK_ENTRY}} {{CC_FLAGS}}
+
+run_hack: build_hack
+  {{BUILD_HACK}} {{INPUT_FILE}}
+
+test_hack: build_hack
+  {{BUILD_HACK}} {{TEST_FILE}}

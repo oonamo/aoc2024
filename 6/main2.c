@@ -9,7 +9,6 @@
 #define CAP_INCREMENT 5
 
 #define COLUMNS 130
-#define ROWS
 
 typedef struct
 {
@@ -47,17 +46,43 @@ typedef struct
     int **items;
 } Matrix;
 
+typedef struct
+{
+    Direction dir;
+    Pos pos;
+} GuardState;
+
+typedef struct
+{
+    unsigned long size;
+    unsigned long capacity;
+    GuardState *states;
+} state_t;
+
 Vec *n_vec();
 void delete_vec(Vec *);
 void append(Vec *, int);
 void sort_vec(Vec *);
-int travel(Pos *, Matrix *, Direction, int);
+void travel(Pos *, Matrix *, Direction, state_t *);
+int brute_force(Pos *, Matrix *);
 
 Matrix *n_matrix(int rows, int cols);
 void appendRowVector(Matrix *m, Vec *v);
 void delete_matrix(Matrix *m);
 
+void placeObstacle(Pos *pos, Matrix *m);
+bool guard_is_stuck(Pos *pos, Pos *starting, Matrix *m);
+
 int compare(const void *a, const void *b);
+void undo_travel(Pos *pos, Direction dir);
+void updateLocation(Pos *pos, Direction dir);
+Direction turn_right(Direction dir);
+
+state_t *n_state();
+void delete_state(state_t *);
+void append_to_state(state_t *vec, Pos *pos, Direction dir);
+bool state_is_unique(state_t *vec, Pos *pos, Direction dir);
+bool state_pos_is_unique(state_t *vec, Pos *pos);
 
 void consume_line(FILE *);
 
@@ -121,10 +146,92 @@ int solve(char *file)
             col++;
         }
     }
-    result = travel(&guard, mat, UP, 0);
+    result = brute_force(&guard, mat);
+
     delete_vec(vec);
     delete_matrix(mat);
+
     return result;
+}
+
+int brute_force(Pos *pos, Matrix *m)
+{
+    int count = 0;
+    Pos starting = {
+        .col = pos->col,
+        .row = pos->row,
+    };
+
+    state_t *s = n_state();
+    travel(pos, m, UP, s);
+    printf("part1: %lu\n", s->size);
+
+    for (unsigned long i = 0; i < s->size; i++)
+    {
+        GuardState state = s->states[i];
+
+        // Don't place where their already is an obstacle
+        if (m->items[state.pos.row][state.pos.col] == OBSTACLE)
+        {
+            continue;
+        }
+
+        char tmp = m->items[state.pos.row][state.pos.col];
+        m->items[state.pos.row][state.pos.col] = OBSTACLE;
+
+        if (guard_is_stuck(pos, &starting, m))
+        {
+            count++;
+        }
+
+        pos->row = starting.row;
+        pos->col = starting.col;
+
+        m->items[state.pos.row][state.pos.col] = tmp;
+    }
+
+    delete_state(s);
+    return count;
+}
+
+void placeObstacle(Pos *pos, Matrix *m)
+{
+    m->items[pos->row][pos->col] = OBSTACLE;
+}
+
+bool guard_is_stuck(Pos *pos, Pos *starting, Matrix *m)
+{
+    Direction dir = UP;
+    state_t *state = n_state();
+
+    bool is_stuck = false;
+
+    while (true)
+    {
+        if ((pos->row >= m->rows) || (pos->row < 0) ||
+            (pos->col >= m->columns) || (pos->col < 0))
+        {
+            break;
+        }
+
+        if (m->items[pos->row][pos->col] == OBSTACLE)
+        {
+            if (!state_is_unique(state, pos, dir))
+            {
+                is_stuck = true;
+                break;
+            }
+            append_to_state(state, pos, dir);
+
+            undo_travel(pos, dir);
+            dir = turn_right(dir);
+        }
+
+        updateLocation(pos, dir);
+    }
+
+    delete_state(state);
+    return is_stuck;
 }
 
 Direction turn_right(Direction dir)
@@ -133,10 +240,13 @@ Direction turn_right(Direction dir)
     {
     case LEFT:
         return UP;
+        break;
     case RIGHT:
         return DOWN;
+        break;
     case UP:
         return RIGHT;
+        break;
     case DOWN:
         return LEFT;
         break;
@@ -183,15 +293,13 @@ void undo_travel(Pos *pos, Direction dir)
     }
 }
 
-int travel(Pos *pos, Matrix *m, Direction dir, int c)
+void travel(Pos *pos, Matrix *m, Direction dir, state_t *s)
 {
     if ((pos->row >= m->rows) || (pos->row < 0) || (pos->col >= m->columns) ||
         (pos->col < 0))
     {
-        return c;
+        return;
     }
-
-    int count = c;
 
     if (m->items[pos->row][pos->col] == OBSTACLE)
     {
@@ -200,15 +308,14 @@ int travel(Pos *pos, Matrix *m, Direction dir, int c)
     }
     else
     {
-        if (m->items[pos->row][pos->col] != MARKED)
+        if (state_pos_is_unique(s, pos))
         {
-            m->items[pos->row][pos->col] = MARKED;
-            count++;
+            append_to_state(s, pos, dir);
         }
     }
 
     updateLocation(pos, dir);
-    return travel(pos, m, dir, count);
+    travel(pos, m, dir, s);
 }
 
 void consume_line(FILE *fp)
@@ -225,6 +332,26 @@ Vec *n_vec()
     v->size = 0;
     v->items = NULL;
     return v;
+}
+
+state_t *n_state()
+{
+    state_t *s = malloc(sizeof(state_t));
+    s->capacity = 0;
+    s->size = 0;
+    s->states = NULL;
+    return s;
+}
+
+void delete_state(state_t *s)
+{
+    if (s == NULL)
+        return;
+
+    if (s->states != NULL)
+        free(s->states);
+
+    free(s);
 }
 
 int compare(const void *a, const void *b) { return *(int *)a - *(int *)b; }
@@ -259,6 +386,57 @@ void append(Vec *vec, int val)
         }
     }
     vec->items[vec->size++] = val;
+}
+
+bool state_pos_is_unique(state_t *vec, Pos *pos)
+{
+    for (unsigned long i = 0; i < vec->size; i++)
+    {
+        if (vec->states[i].pos.col == pos->col &&
+            vec->states[i].pos.row == pos->row)
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+bool state_is_unique(state_t *vec, Pos *pos, Direction dir)
+{
+    for (unsigned long i = 0; i < vec->size; i++)
+    {
+        if (vec->states[i].dir == dir && vec->states[i].pos.col == pos->col &&
+            vec->states[i].pos.row == pos->row)
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+void append_to_state(state_t *vec, Pos *pos, Direction dir)
+{
+    if (vec->size <= vec->capacity)
+    {
+        if (vec->capacity == 0)
+        {
+            vec->capacity = INIT_CAP;
+            vec->states = malloc(sizeof(GuardState) * vec->capacity);
+        }
+        else
+        {
+            vec->capacity += CAP_INCREMENT;
+            vec->states =
+                realloc(vec->states, sizeof(GuardState) * vec->capacity);
+        }
+    }
+    GuardState s = {.dir = dir};
+
+    s.pos.row = pos->row;
+    s.pos.col = pos->col;
+
+    vec->states[vec->size++] = s;
 }
 
 Matrix *n_matrix(int rows, int cols)
