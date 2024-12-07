@@ -8,12 +8,37 @@
 #define INIT_CAP 25
 #define CAP_INCREMENT 5
 
+#define COLUMNS 130
+#define ROWS
+
 typedef struct
 {
     unsigned long size;
     unsigned long capacity;
     int *items;
 } Vec;
+
+typedef enum
+{
+    GUARD = '^',
+    OBSTACLE = '#',
+    SPACE = '.',
+    MARKED = 'x',
+} Obj;
+
+typedef struct
+{
+    int row;
+    int col;
+} Pos;
+
+typedef enum
+{
+    LEFT,
+    RIGHT,
+    UP,
+    DOWN
+} Direction;
 
 typedef struct
 {
@@ -26,6 +51,7 @@ Vec *n_vec();
 void delete_vec(Vec *);
 void append(Vec *, int);
 void sort_vec(Vec *);
+int travel(Pos *, Matrix *, Direction, int);
 
 Matrix *n_matrix(int rows, int cols);
 void appendRowVector(Matrix *m, Vec *v);
@@ -54,6 +80,7 @@ int solve(char *file)
 {
     FILE *fp = fopen(file, "r");
     Vec *vec = NULL;
+    Matrix *mat = NULL;
     double result = 0;
 
     if (fp == NULL)
@@ -63,14 +90,125 @@ int solve(char *file)
     }
 
     vec = n_vec();
+    mat = n_matrix(0, COLUMNS);
 
     char io;
+    Pos guard = {0, 0};
+    unsigned long col = 0, row = 0;
     while ((io = fgetc(fp)) && io != EOF)
     {
+        if (!isspace(io))
+        {
+            append(vec, io);
+        }
+
+        if (io == '^')
+        {
+            guard.row = row;
+            guard.col = col;
+        }
+
+        if (io == '\n')
+        {
+            row++;
+            col = 0;
+
+            appendRowVector(mat, vec);
+            vec->size = 0;
+        }
+        else
+        {
+            col++;
+        }
+    }
+    result = travel(&guard, mat, UP, 0);
+    delete_vec(vec);
+    delete_matrix(mat);
+    return result;
+}
+
+Direction turn_right(Direction dir)
+{
+    switch (dir)
+    {
+    case LEFT:
+        return UP;
+    case RIGHT:
+        return DOWN;
+    case UP:
+        return RIGHT;
+    case DOWN:
+        return LEFT;
+        break;
     }
 
-    delete_vec(vec);
-    return result;
+    return UP;
+}
+
+void updateLocation(Pos *pos, Direction dir)
+{
+    switch (dir)
+    {
+    case LEFT:
+        pos->col -= 1;
+        break;
+    case RIGHT:
+        pos->col += 1;
+        break;
+    case UP:
+        pos->row -= 1;
+        break;
+    case DOWN:
+        pos->row += 1;
+        break;
+    }
+}
+
+void undo_travel(Pos *pos, Direction dir)
+{
+    switch (dir)
+    {
+    case LEFT:
+        pos->col += 1;
+        break;
+    case RIGHT:
+        pos->col -= 1;
+        break;
+    case UP:
+        pos->row += 1;
+        break;
+    case DOWN:
+        pos->row -= 1;
+        break;
+    }
+}
+
+int travel(Pos *pos, Matrix *m, Direction dir, int c)
+{
+    if ((pos->row >= m->rows) || (pos->row < 0) || (pos->col >= m->columns) ||
+        (pos->col < 0))
+    {
+        return c;
+    }
+
+    int count = c;
+
+    if (m->items[pos->row][pos->col] == OBSTACLE)
+    {
+        undo_travel(pos, dir);
+        dir = turn_right(dir);
+    }
+    else
+    {
+        if (m->items[pos->row][pos->col] != MARKED)
+        {
+            m->items[pos->row][pos->col] = MARKED;
+            count++;
+        }
+    }
+
+    updateLocation(pos, dir);
+    return travel(pos, m, dir, count);
 }
 
 void consume_line(FILE *fp)
