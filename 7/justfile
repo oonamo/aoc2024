@@ -1,6 +1,6 @@
 set shell := ["cmd.exe", "/c"]
 
-CC := "gcc"
+CC := "clang"
 CC_FLAGS := "-Wall -Wextra"
 ENTRY := "main.c"
 BUILD := "main.exe"
